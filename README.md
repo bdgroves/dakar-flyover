@@ -34,6 +34,32 @@ pixi run render     # the whole flight, 1920x1080 at 30 fps -> out\dakar_2027_fl
 
 `pixi run preview` makes a quick, small version first. To change the flight, edit `KEYS` in `scripts/flight.py`; to change the route, edit `scripts/route.py`.
 
+### On Windows with Smart App Control
+
+Smart App Control blocks the new, unsigned DLLs and `interactive_viewer.exe` that a fresh `pixi install` brings in, so this repo's own environment won't run. An older forge3d environment that Windows already trusts will, and it uses the GPU directly. Here that's `humphreys-orbit` (forge3d 1.39), reached through an `f3d` function in the PowerShell profile:
+
+```powershell
+function f3d {
+    $e = "C:\Users\brook\Projects\humphreys-orbit\.pixi\envs\default"
+    $env:PATH = "$e\Scripts;$e\Library\bin;$e;" + $env:PATH   # so forge3d finds interactive_viewer.exe
+    $env:GDAL_DATA = "$e\Library\share\gdal"
+    & "$e\python.exe" @args
+}
+```
+
+Then skip the download and take the prepared data from the `prep-data` branch:
+
+```powershell
+git pull
+git archive -o prep.tar origin/prep-data
+mkdir data -Force; tar -xf prep.tar -C data; Remove-Item prep.tar
+f3d scripts\render.py --stills 2,13,30 --size 960x540 --lite   # quick check
+f3d scripts\render.py --preview
+f3d scripts\render.py                                          # the full flight
+```
+
+Never run `pixi install`, `update` or `add` inside `humphreys-orbit`, and don't delete its `.pixi` folder: new copies of the DLLs would be blocked. If it ever stops working, point `$e` at another old environment (solstice, wa-smoke). WSL2 Ubuntu is the fallback; there Vulkan only sees the CPU, but OpenGL reaches the NVIDIA card with `MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA GALLIUM_DRIVER=d3d12`.
+
 ## How it's made
 
 - **Terrain:** Copernicus GLO-90 DEM on a 300 m grid in a transverse Mercator centred on 41.5°E. The open Red Sea has no DEM tiles, so it's sea level.
