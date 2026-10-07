@@ -260,14 +260,23 @@ def main() -> int:
                     help="forge3d's volumetric haze (needs --forge-sky: it tints the background, so the sky can't be painted)")
     ap.add_argument("--no-labels", action="store_true", help="no town names or title on the frames")
     ap.add_argument("--out", type=str, default=None)
+    ap.add_argument("--frames-dir", type=str, default=None,
+                    help="write numbered JPEG frames here instead of a video (for rendering in parallel pieces)")
+    ap.add_argument("--chunk", type=int, default=0, help="with --frames-dir: which piece of the flight, from 0")
+    ap.add_argument("--chunks", type=int, default=1, help="with --frames-dir: how many pieces")
+    ap.add_argument("--encode", type=str, default=None,
+                    help="no rendering: join the numbered frames in this folder into the video")
     args = ap.parse_args()
+
+    if args.encode:
+        return encode(Path(args.encode), Path(args.out) if args.out else config.VIDEO, args.fps)
 
     for p in (config.DEM_X, *(config.graded(t[0]) for t in config.image_tiles())):
         if not p.exists():
             print(f"Missing {p.name}. Run: pixi run data, then pixi run prep")
             return 1
     ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is None and not args.stills:
+    if ffmpeg is None and not (args.stills or args.frames_dir):
         print("ffmpeg must be on PATH")
         return 1
 
@@ -284,6 +293,15 @@ def main() -> int:
         frames = list(range(0, len(path.t), 3))
     else:
         frames = list(range(len(path.t)))
+    frames_dir = Path(args.frames_dir) if args.frames_dir else None
+    if frames_dir:
+        n_all = len(frames)
+        a, b = n_all * args.chunk // args.chunks, n_all * (args.chunk + 1) // args.chunks
+        frames_dir.mkdir(parents=True, exist_ok=True)
+        frames = [i for i in frames[a:b] if not (frames_dir / f"frame_{i:05d}.jpg").exists()]
+        print(f"chunk {args.chunk + 1} of {args.chunks}: frames {a}-{b - 1}, {len(frames)} still to render")
+        if not frames:
+            return 0
     out_fps = args.fps / 3 if args.preview else args.fps
     config.OUT.mkdir(parents=True, exist_ok=True)
     out = Path(args.out) if args.out else (config.OUT / "preview.mp4" if args.preview else config.VIDEO)
@@ -293,7 +311,7 @@ def main() -> int:
 
     encoder = None
     partial = out.with_suffix(".part.mp4")
-    if not args.stills:
+    if not (args.stills or frames_dir):
         encoder = subprocess.Popen(
             [ffmpeg, "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}",
              "-framerate", f"{out_fps:g}", "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", "17",
@@ -333,12 +351,16 @@ def main() -> int:
                 rgb = towns.draw(rgb, path.eye[i], path.aim[i], float(path.fov[i]), float(path.t[i]))
             if args.stills:
                 Image.fromarray(rgb).save(stills_dir / f"still_{path.t[i]:05.1f}s.png")
+            elif frames_dir:
+                tmp = frames_dir / f"frame_{i:05d}.part.jpg"
+                Image.fromarray(rgb).save(tmp, quality=95)
+                tmp.replace(frames_dir / f"frame_{i:05d}.jpg")
             else:
                 encoder.stdin.write(rgb.tobytes())
-            if n % 30 == 0 or args.stills:
+            if n % 30 == 0 or args.stills or frames_dir:
                 el = time.perf_counter() - start
                 print(f"  frame {n + 1}/{len(frames)}  ({path.t[i]:.1f} s)  "
-                      f"~{el / (n + 1) * (len(frames) - n - 1) / 60:.0f} min left", end="\r")
+                      f"~{el / (n + 1) * (len(frames) - n - 1) / 60:.0f} min left", end="\n" if frames_dir else "\r")
         print()
     finally:
         viewer.close()
@@ -351,8 +373,30 @@ def main() -> int:
             return 1
         partial.replace(out)
         print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB) in {(time.perf_counter() - start) / 60:.0f} min")
+    elif frames_dir:
+        print(f"wrote {len(frames)} frames to {frames_dir}")
     else:
         print(f"wrote {len(frames)} stills to {stills_dir}")
+    return 0
+
+
+def encode(frames_dir: Path, out: Path, fps: int) -> int:
+    """Join frame_00000.jpg, frame_00001.jpg, ... into the MP4."""
+    have = sorted(frames_dir.glob("frame_*.jpg"))
+    nums = [int(f.stem.split("_")[1]) for f in have]
+    if not nums or nums != list(range(len(nums))):
+        missing = sorted(set(range(max(nums, default=-1) + 1)) - set(nums))
+        print(f"{len(nums)} frames, with gaps: {missing[:20]}{' ...' if len(missing) > 20 else ''}")
+        return 1
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [shutil.which("ffmpeg") or "ffmpeg", "-y", "-loglevel", "error", "-framerate", str(fps),
+           "-i", str(frames_dir / "frame_%05d.jpg"), "-c:v", "libx264", "-preset", "slow", "-crf", "17",
+           "-pix_fmt", "yuv420p", "-vf", "scale=out_color_matrix=bt709", "-colorspace", "bt709",
+           "-color_primaries", "bt709", "-color_trc", "bt709", "-movflags", "+faststart", str(out)]
+    if subprocess.run(cmd).returncode != 0:
+        print("ffmpeg failed")
+        return 1
+    print(f"wrote {out} from {len(nums)} frames ({out.stat().st_size / 1e6:.1f} MB)")
     return 0
 
 

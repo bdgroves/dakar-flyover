@@ -1,0 +1,111 @@
+name: Render the flyover
+
+# Renders the whole flight with forge3d on GitHub's CPUs, split across
+# parallel jobs (each renders one piece of the flight as numbered JPEG
+# frames), then joins the frames into the MP4. Reads the prepared data from
+# the `prep-data` branch, so run "Data and stills" first. Run by hand from
+# the Actions tab. The video comes back as the `flyover` artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      chunks:
+        description: "Parallel render jobs"
+        default: "40"
+      size:
+        description: "Frame size"
+        default: "1920x1080"
+      reuse_run:
+        description: "Run ID of an earlier render whose finished frames can be kept (optional)"
+        default: ""
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  FORGE3D: "forge3d==1.42.0"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      chunks: ${{ steps.c.outputs.list }}
+    steps:
+      - id: c
+        run: echo "list=$(python3 -c "import json; print(json.dumps(list(range(int('${{ inputs.chunks }}')))))")" >> "$GITHUB_OUTPUT"
+
+  frames:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: ${{ fromJSON(needs.plan.outputs.chunks) }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Prepared data
+        run: git fetch -q --depth 1 origin prep-data && mkdir -p data && git archive FETCH_HEAD | tar -x -C data
+      - name: Frames already rendered in an earlier run
+        if: inputs.reuse_run != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: frames-${{ matrix.chunk }}
+          path: frames
+          run-id: ${{ inputs.reuse_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Software Vulkan + virtual display
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mesa-vulkan-drivers libvulkan1 xvfb libx11-xcb1 libxkbcommon-x11-0 libxkbcommon0 libxcursor1 libxi6 libxrandr2 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libwayland-client0 libegl1 fonts-dejavu-core >/dev/null
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q "$FORGE3D" rasterio numpy scipy pillow shapely
+      - name: Render this piece
+        env:
+          XDG_RUNTIME_DIR: /tmp
+        run: |
+          set -o pipefail
+          # finished frames are kept, so a retry only renders what's left
+          for attempt in 1 2 3; do
+            xvfb-run -a -s "-screen 0 1920x1080x24" python scripts/render.py --size ${{ inputs.size }} --lite \
+              --frames-dir frames --chunk ${{ matrix.chunk }} --chunks ${{ inputs.chunks }} 2>&1 | tee -a render.log && exit 0
+            echo "attempt $attempt failed; retrying in $((attempt * 30)) s"; sleep $((attempt * 30))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frames-${{ matrix.chunk }}
+          path: frames/frame_*.jpg
+          retention-days: 5
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: log-${{ matrix.chunk }}
+          path: |
+            render.log
+            out/viewer.log
+          retention-days: 5
+
+  video:
+    needs: frames
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frames-*
+          path: frames
+          merge-multiple: true
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q rasterio numpy scipy pillow shapely forge3d==1.42.0
+      - run: python scripts/render.py --encode frames --out out/dakar_2027_flyover.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flyover
+          path: out/dakar_2027_flyover.mp4
+          retention-days: 30

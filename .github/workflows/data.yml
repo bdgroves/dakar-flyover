@@ -1,0 +1,113 @@
+name: Data and stills
+
+# Downloads the terrain and imagery, prepares them, and renders the test
+# stills with forge3d on GitHub's CPUs (Mesa's llvmpipe Vulkan driver under a
+# virtual display). Brooks's laptop can't run the pixi environment (Smart App
+# Control blocks conda-forge's unsigned DLLs), so this is where the work runs.
+#
+# The prepared data goes to the `prep-data` branch, which render.yml reads.
+# The stills and the flight map come back as the `stills` artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      stills:
+        description: "Seconds into the flight to render as stills"
+        default: "2,13,28,45,60,72,84,101"
+      fresh:
+        description: "Download the data again instead of reusing prep-data"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data
+  cancel-in-progress: true
+
+env:
+  FORGE3D: "forge3d==1.42.0"
+  STILLS: ${{ inputs.stills || '2,13,28,45,60,72,84,101' }}
+
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q rasterio numpy scipy pillow shapely
+      - name: Decide whether the data needs downloading
+        id: need
+        run: |
+          # Only the download inputs force a fresh download; flight or render edits reuse prep-data.
+          if [ "${{ inputs.fresh }}" = "true" ] || ! git fetch -q --depth 1 origin prep-data:refs/remotes/origin/prep-data; then
+            echo "fetch=yes" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git fetch -q --depth 2 origin main
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -qE 'scripts/(fetch_data|config)\.py'; then
+            echo "fetch=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "fetch=no" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Download (Copernicus DEM, Sentinel-2)
+        if: steps.need.outputs.fetch == 'yes'
+        run: python scripts/fetch_data.py
+      - name: Reuse the downloaded data
+        if: steps.need.outputs.fetch == 'no'
+        run: mkdir -p data && git archive origin/prep-data | tar -x -C data && ls -la data
+      - name: Prepare (stretch the terrain, grade the imagery, draw the route)
+        run: |
+          rm -f data/*_x3.tif
+          python scripts/prep.py
+          python scripts/flight.py
+      - name: Publish to the prep-data branch
+        run: |
+          mkdir -p /tmp/p && cp data/*.tif data/*.png /tmp/p/ && cd /tmp/p && git init -q -b prep-data
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "prepared data for ${GITHUB_SHA::7}"
+          git push -f -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" prep-data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flight-map
+          path: out/flight_map.png
+          retention-days: 14
+
+  stills:
+    needs: data
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - name: Prepared data
+        run: git fetch -q --depth 1 origin prep-data && mkdir -p data && git archive FETCH_HEAD | tar -x -C data
+      - name: Software Vulkan + virtual display
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mesa-vulkan-drivers libvulkan1 xvfb libx11-xcb1 libxkbcommon-x11-0 libxkbcommon0 libxcursor1 libxi6 libxrandr2 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libwayland-client0 libegl1 fonts-dejavu-core >/dev/null
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q "$FORGE3D" rasterio numpy scipy pillow shapely
+      - name: Render the stills
+        env:
+          XDG_RUNTIME_DIR: /tmp
+        run: |
+          set -o pipefail
+          xvfb-run -a -s "-screen 0 1920x1080x24" python scripts/render.py --stills "$STILLS" --lite 2>&1 | tee render.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stills
+          path: |
+            out/stills/
+            render.log
+            out/viewer.log
+          retention-days: 14

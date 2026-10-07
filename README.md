@@ -12,7 +12,16 @@ A flight around the Dakar Rally 2027 loop in Saudi Arabia on a January afternoon
 
 The route on the ground is the **outline ASO announced in May 2026**: the bivouac towns in order, joined by straight lines. It's a sketch of the order, not the racing line. The stage-by-stage route comes out in December, and then this gets re-rendered. The same outline is mapped on [brooksgroves.com/dakar-2027.html](https://brooksgroves.com/dakar-2027.html).
 
-## Run it
+## Run it on GitHub
+
+The renders run on GitHub Actions, on CPUs with Mesa's software Vulkan, so no GPU or local Python environment is needed:
+
+1. **Data and stills** runs on every push to `scripts/`, or by hand from the Actions tab. It downloads and prepares the data, saves it to the `prep-data` branch, and renders eight test frames. They come back as the `stills` artifact, with the flight map as `flight-map`. A push that only changes the flight or the look reuses the data it already downloaded; tick **fresh** to download again.
+2. **Render the flyover** is run by hand. It splits the flight across 40 parallel jobs and joins their frames into the video, which comes back as the `flyover` artifact. If some pieces fail, run it again with the failed run's ID as **reuse_run**, and only the missing frames are rendered.
+
+## Run it locally
+
+With a GPU and a pixi environment that your system allows to run:
 
 ```powershell
 pixi install
