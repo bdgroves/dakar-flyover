@@ -32,7 +32,7 @@ MAX_CLOUD = 15                                 # percent, per Sentinel-2 tile
 
 
 def image_path(k: int) -> Path:
-    return DATA / f"sentinel2_{k}.png"
+    return DATA / f"sentinel2_{k}.tif"   # reflectance x10000, red/green/blue
 
 
 def graded(path: Path) -> Path:
@@ -68,6 +68,13 @@ def image_tiles():
     edges = [round(e / IMAGE_RES) * IMAGE_RES for e in edges]
     edges[0], edges[-1] = top, bottom
     return [(image_path(k), left, edges[k], right, edges[k + 1]) for k in range(IMAGE_TILES)]
+
+
+def lonlat_bounds():
+    """(west, south, east, north) that the projected grid actually covers. A rectangle in
+    this projection bulges past WEST/EAST/SOUTH/NORTH at its corners, so downloads use this."""
+    from rasterio.warp import transform_bounds
+    return transform_bounds(CRS, "EPSG:4326", *(lambda l, t, r, b: (l, b, r, t))(*bounds()), densify_pts=101)
 
 
 LEFT, TOP, RIGHT, BOTTOM = bounds()

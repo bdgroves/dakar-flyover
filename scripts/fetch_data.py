@@ -3,10 +3,12 @@
   arabia_dem_300m.tif   Copernicus GLO-90 elevation (ESA, free), the 1-degree tiles
                         from the Red Sea to beyond Wadi Ad-Dawasir, on a 300 m grid.
                         Open sea has no tiles; it is set to sea level.
-  sentinel2_*.png       Sentinel-2 true colour at 150 m, read from each scene's
-                        overviews (so only a few MB per scene come down), from the
-                        clearest passes of December 2025 and January 2026, the
-                        season the rally runs in
+  sentinel2_*.tif       Sentinel-2 red, green and blue surface reflectance (x10000)
+                        at 150 m, read from each scene's overviews (so only a few MB
+                        per scene come down), from the clearest passes of December
+                        2025 and January 2026, the season the rally runs in. The
+                        bands rather than Sentinel-2's ready-made true colour, which
+                        clips bright sand to yellow-white; prep sets the tone.
 
 Both come from public AWS buckets (no account needed); files that already exist are
 skipped, so an interrupted run can simply be restarted.
@@ -24,7 +26,6 @@ from urllib.parse import parse_qs, urlparse
 
 import numpy as np
 import rasterio
-from PIL import Image
 from rasterio.errors import RasterioIOError
 from rasterio.features import rasterize
 from rasterio.transform import from_origin
@@ -58,8 +59,9 @@ def build_dem() -> None:
     left, top, w, h = config.grid()
     tf = from_origin(left, top, config.DEM_RES, config.DEM_RES)
     dem = np.full((h, w), np.nan, dtype=np.float32)
-    tiles = [(la, lo) for la in range(math.floor(config.SOUTH), math.floor(config.NORTH) + 1)
-             for lo in range(math.floor(config.WEST), math.floor(config.EAST) + 1)]
+    west, south, east, north = config.lonlat_bounds()
+    tiles = [(la, lo) for la in range(math.floor(south), math.floor(north) + 1)
+             for lo in range(math.floor(west), math.floor(east) + 1)]
     print(f"Copernicus DEM: {len(tiles)} tiles -> {w} x {h} at {config.DEM_RES:g} m")
     sea = 0
     with rasterio.Env(**GDAL_ENV):
@@ -103,7 +105,7 @@ def post(body: dict) -> dict:
 
 def stac_search(dates) -> list[dict]:
     """Every scene in the window under MAX_CLOUD, following the search's pages."""
-    body = {"collections": ["sentinel-2-l2a"], "bbox": [config.WEST, config.SOUTH, config.EAST, config.NORTH],
+    body = {"collections": ["sentinel-2-l2a"], "bbox": list(config.lonlat_bounds()),
             "datetime": f"{dates[0]}T00:00:00Z/{dates[1]}T23:59:59Z", "limit": 250,
             "query": {"eo:cloud_cover": {"lt": config.MAX_CLOUD}}}
     feats = []
@@ -130,7 +132,7 @@ def scenes() -> list[dict]:
     for dates in (config.IMAGE_DATE, config.IMAGE_FALLBACK):
         feats = sorted(stac_search(dates), key=lambda f: f["properties"].get("eo:cloud_cover", 100))
         for f in feats:
-            if f["id"] not in seen and "visual" in f["assets"] and "scl" in f["assets"]:
+            if f["id"] not in seen and all(b in f["assets"] for b in ("red", "green", "blue", "scl")):
                 seen.add(f["id"])
                 out.append(f)
     return out
@@ -156,7 +158,7 @@ def build_image(path, left, top, right, bottom, items) -> None:
     res = config.IMAGE_RES
     w, h = round((right - left) / res), round((top - bottom) / res)
     tf = from_origin(left, top, res, res)
-    rgb = np.zeros((3, h, w), dtype=np.uint8)
+    rgb = np.zeros((3, h, w), dtype=np.uint16)
     have = np.zeros((h, w), dtype=bool)
     print(f"{path.name}: {w} x {h} px at {res:g} m")
     with rasterio.Env(**GDAL_ENV):
@@ -179,12 +181,18 @@ def build_image(path, left, top, right, bottom, items) -> None:
                         continue
                 else:
                     good = todo
-                part = np.zeros((3, h, w), dtype=np.uint8)
-                with open_overview(f["assets"]["visual"]["href"], res) as src:
-                    for b in range(3):
-                        reproject(rasterio.band(src, b + 1), part[b], dst_transform=tf, dst_crs=config.CRS,
+                part = np.zeros((3, h, w), dtype=np.float32)
+                for b, band in enumerate(("red", "green", "blue")):
+                    asset = f["assets"][band]
+                    rb = (asset.get("raster:bands") or [{}])[0]
+                    scale, offset = rb.get("scale", 1e-4), rb.get("offset", 0.0)
+                    dn = np.zeros((h, w), dtype=np.float32)
+                    with open_overview(asset["href"], res) as src:
+                        reproject(rasterio.band(src, 1), dn, dst_transform=tf, dst_crs=config.CRS,
                                   src_nodata=0, dst_nodata=0, resampling=Resampling.average)
-                good &= part.min(axis=0) > 0
+                    part[b] = np.where(dn > 0, (dn * scale + offset) * 10000, 0)    # reflectance x10000
+                good &= dn > 0
+                part = np.clip(part, 1, 65535).astype(np.uint16)
                 rgb[:, good] = part[:, good]
                 have |= good
                 p = f["properties"]
@@ -197,8 +205,11 @@ def build_image(path, left, top, right, bottom, items) -> None:
     if not have.all():
         # open sea far from the coast is outside every Sentinel-2 tile; prep paints it
         print(f"  {1 - have.mean():.2%} has no imagery (open sea): left black for prep")
-    tmp = path.with_suffix(".part.png")
-    Image.fromarray(np.moveaxis(rgb, 0, -1)).save(tmp)
+    tmp = path.with_suffix(".part.tif")
+    prof = {"driver": "GTiff", "width": w, "height": h, "count": 3, "dtype": "uint16", "crs": config.CRS,
+            "transform": tf, "nodata": 0, "compress": "deflate", "predictor": 2, "tiled": True}
+    with rasterio.open(tmp, "w", **prof) as dst:
+        dst.write(rgb)
     tmp.replace(path)
     print(f"Saved {path.name}")
 

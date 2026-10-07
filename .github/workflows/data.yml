@@ -102,6 +102,23 @@ jobs:
         run: |
           set -o pipefail
           xvfb-run -a -s "-screen 0 1920x1080x24" python scripts/render.py --stills "$STILLS" --lite 2>&1 | tee render.log
+      - name: Publish to the stills branch (browsable on GitHub)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/s && cp render.log /tmp/s/ 2>/dev/null; cp out/viewer.log /tmp/s/ 2>/dev/null
+          python - <<'PY'
+          import glob, os
+          from PIL import Image
+          for f in sorted(glob.glob("out/stills/*.png")):
+              Image.open(f).convert("RGB").save("/tmp/s/" + os.path.basename(f)[:-4] + ".jpg", quality=88)
+          PY
+          python scripts/flight.py >/dev/null && python -c "from PIL import Image; Image.open('out/flight_map.png').convert('RGB').save('/tmp/s/flight_map.jpg', quality=88)" || true
+          cd /tmp/s && ls && git init -q -b stills
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "stills for ${GITHUB_SHA::7}"
+          git push -f -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" stills
       - uses: actions/upload-artifact@v4
         if: always()
         with:

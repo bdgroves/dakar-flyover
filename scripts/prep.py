@@ -2,10 +2,11 @@
 
   arabia_dem_300m_x3.tif  the terrain with heights stretched EXAGGERATION times, so
                           the escarpments and plateaus read from the air
-  sentinel2_*_graded.png  the imagery with a gentle grade (the desert is bright, so
-                          highlights are eased down a little), the open Red Sea
-                          painted in where Sentinel-2 doesn't reach, and the
-                          route outline and bivouac towns drawn on the ground
+  sentinel2_*_graded.png  the imagery toned from surface reflectance (bright sand
+                          kept below white, dark lava fields lifted), the open Red
+                          Sea painted as one smooth gradient (Sentinel-2's sea is a
+                          patchwork of dates), and the route outline and bivouac
+                          towns drawn on the ground
 
     pixi run prep
 """
@@ -22,7 +23,12 @@ from scipy import ndimage
 import config
 import route
 
-SATURATION = 1.10
+# Tone: reflectance WHITE maps to white, with a gamma that lifts the dark basalt
+# fields. Desert sand is around 0.3-0.45 reflectance, so this keeps it off white.
+WHITE = 0.62
+GAMMA = 1.7
+SATURATION = 1.05
+SEA_KM = (3.0, 9.0)            # real imagery near the coast (reefs, shallows), painted beyond
 SEA_SHALLOW = np.array([0.16, 0.36, 0.42], dtype=np.float32)
 SEA_DEEP = np.array([0.05, 0.13, 0.25], dtype=np.float32)
 LINE_M, HALO_M, DOT_M = 650.0, 1300.0, 1500.0      # route line, its dark edge, town dot radius
@@ -54,28 +60,33 @@ def to_image(grid: np.ndarray, left: float, top: float, h: int, w: int, order: i
     return out
 
 
-def sea(rgb: np.ndarray, left: float, top: float, z: np.ndarray) -> np.ndarray:
-    """Paint open water where there's no imagery: shallow near the coast, deeper offshore,
-    blended into the satellite's own sea where the two meet."""
+def sea(rgb: np.ndarray, left: float, top: float, z: np.ndarray, coast_km: np.ndarray) -> np.ndarray:
+    """Open water: Sentinel-2's own view near the coast, a painted gradient offshore
+    (shallow to deep), blended between SEA_KM. Land with no clear pass at all
+    borrows its neighbours."""
     h, w = rgb.shape[:2]
     empty = rgb.max(axis=-1) < 1e-3
-    if not empty.any():
-        return rgb
     water = to_image((z <= 0.5).astype(np.float32), left, top, h, w) > 0.5
-    km = ndimage.distance_transform_edt(water) * config.IMAGE_RES / 1000.0
+    km = to_image(coast_km, left, top, h, w)       # measured on the whole grid, so strips agree
     t = np.clip(km / 60.0, 0, 1)[..., None]
     paint = SEA_SHALLOW * (1 - t) + SEA_DEEP * t
-    fill = empty & water
-    rgb[fill] = paint[fill]
-    rest = empty & ~water                  # land with no clear pass at all: borrow the neighbours
+    a = np.clip((km - SEA_KM[0]) / (SEA_KM[1] - SEA_KM[0]), 0, 1)
+    a = np.where(empty & water, 1.0, a * water)[..., None]
+    rest = empty & ~water
     if rest.any():
         idx = ndimage.distance_transform_edt(rest, return_distances=False, return_indices=True)
         rgb = rgb[idx[0], idx[1]]
-    # soften the edge between painted and real sea
-    a = ndimage.gaussian_filter(fill.astype(np.float32), 3)[..., None]
-    soft = np.stack([ndimage.gaussian_filter(rgb[..., c], 3) for c in range(3)], axis=-1)
-    edge = (a > 0.02) & (a < 0.98) & water[..., None]
-    return np.where(edge, soft, rgb)
+    return rgb * (1 - a) + paint * a
+
+
+def tone(path) -> np.ndarray:
+    """Reflectance (x10000) to display colour, 0-1."""
+    with rasterio.open(path) as src:
+        refl = np.moveaxis(src.read().astype(np.float32), 0, -1) / 10000.0
+    empty = refl.max(axis=-1) <= 0.0001
+    rgb = np.clip(refl / WHITE, 0, 1) ** (1 / GAMMA)
+    rgb[empty] = 0
+    return rgb
 
 
 def draw_route(img: Image.Image, left: float, top: float) -> Image.Image:
@@ -107,10 +118,9 @@ def draw_route(img: Image.Image, left: float, top: float) -> Image.Image:
     return img
 
 
-def grade(path, left, top, z) -> None:
+def grade(path, left, top, z, coast_km) -> None:
     Image.MAX_IMAGE_PIXELS = None
-    rgb = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
-    rgb = sea(rgb, left, top, z)
+    rgb = sea(tone(path), left, top, z, coast_km)
     lum = (rgb @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32))[..., None]
     rgb = np.clip(lum + (rgb - lum) * SATURATION, 0.0, 1.0)
     rgb = np.where(rgb > 0.7, 0.7 + (rgb - 0.7) * 0.75, rgb)       # ease the brightest sand
@@ -127,8 +137,9 @@ def main() -> int:
         print("Missing", ", ".join(missing), "- run: pixi run data")
         return 1
     z = stretch()
+    coast_km = ndimage.distance_transform_edt(z <= 0.5) * config.DEM_RES / 1000.0   # kilometres offshore
     for path, left, top, _, _ in tiles:
-        grade(path, left, top, z)
+        grade(path, left, top, z, coast_km)
     return 0
 
 

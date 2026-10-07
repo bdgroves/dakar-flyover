@@ -16,7 +16,7 @@ The route on the ground is the **outline ASO announced in May 2026**: the bivoua
 
 The renders run on GitHub Actions, on CPUs with Mesa's software Vulkan, so no GPU or local Python environment is needed:
 
-1. **Data and stills** runs on every push to `scripts/`, or by hand from the Actions tab. It downloads and prepares the data, saves it to the `prep-data` branch, and renders eight test frames. They come back as the `stills` artifact, with the flight map as `flight-map`. A push that only changes the flight or the look reuses the data it already downloaded; tick **fresh** to download again.
+1. **Data and stills** runs on every push to `scripts/`, or by hand from the Actions tab. It downloads and prepares the data, saves it to the `prep-data` branch, and renders eight test frames. The frames and the flight map land on the [`stills` branch](../../tree/stills), to look at right on GitHub. A push that only changes the flight or the look reuses the data it already downloaded; tick **fresh** to download again.
 2. **Render the flyover** is run by hand. It splits the flight across 40 parallel jobs and joins their frames into the video, which comes back as the `flyover` artifact. If some pieces fail, run it again with the failed run's ID as **reuse_run**, and only the missing frames are rendered.
 
 ## Run it locally
