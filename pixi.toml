@@ -1,0 +1,25 @@
+[workspace]
+name = "dakar-flyover"
+description = "A flyover of the Dakar 2027 route outline across Saudi Arabia, rendered with forge3d"
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-arm64"]
+
+[dependencies]
+python = "3.12.*"
+numpy = "*"
+scipy = "*"
+rasterio = "*"
+pillow = "*"
+ffmpeg = "*"
+shapely = "*"
+
+[pypi-dependencies]
+forge3d = ">=1.42.0"
+
+[tasks]
+data = "python scripts/fetch_data.py"
+prep = { cmd = "python scripts/prep.py", depends-on = ["data"] }
+path = "python scripts/flight.py"
+preview = { cmd = "python scripts/render.py --preview", depends-on = ["prep"] }
+stills = { cmd = "python scripts/render.py --stills 2,13,28,45,60,72,84,101", depends-on = ["prep"] }
+render = { cmd = "python scripts/render.py", depends-on = ["prep"] }
