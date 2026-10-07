@@ -1,0 +1,130 @@
+[viewer-ipc] Creating window 1920x1080
+[viewer-ipc] Window created, waiting for Resumed event
+[viewer-ipc] Received Resumed event
+[viewer-ipc] Initializing Viewer...
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+FORGE3D_VIEWER_ADAPTER name="llvmpipe (LLVM 20.1.2, 256 bits)" vendor=0x10005 device=0x0000 backend=Vulkan device_type=Cpu driver="llvmpipe" driver_info="Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)"
+[viewer] lit compute WGSL version 2 compiled
+[viewer-ipc] Viewer initialized successfully
+[XYZZY_TERRAIN] LoadTerrain handler entry, path=/home/runner/work/dakar-flyover/dakar-flyover/data/arabia_dem_300m_x3.tif
+[DEBUG LoadTerrain] Staging new terrain_viewer
+[terrain] Height range: 0.0 to 8914.6 (range: 8914.6)
+[terrain] Loaded 4007x4668 DEM, domain: 0.0..8914.6, grid=2048x2048
+[terrain] Loaded: /home/runner/work/dakar-flyover/dakar-flyover/data/arabia_dem_300m_x3.tif
+[DEBUG LoadTerrain] staged terrain_viewer published
+FORGE3D_VIEWER_READY port=42891
+[viewer-ipc] READY message sent, port=42891
+[viewer-debug] entering render loop (first frame)
+[viewer-debug] render gate: gi=true pipe=true cam=true vb=false z=true bgl=true
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[render] terrain_params: min_h=0.0, h_range=8914.6, width=1202100.0, z_scale=1.00
+[render] Expected Y range: 0 to 8914.6
+[render] Camera target: (548050.0, 4457.3, -2624800.0)
+[overlay] LoadOverlay command received: name='sentinel2_0' path='/home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_0_graded.png'
+[overlay] terrain_viewer exists, calling add_overlay_image...
+[overlay] Added layer 'sentinel2_0' (id=0, 8014x2334)
+[overlay] Composite non-zero alpha pixels: 4676169 / 18704676
+[overlay] Built composite texture 4007x4668 from 1 visible layers
+[overlay] Loaded 'sentinel2_0' from /home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_0_graded.png (id=0)
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[overlay] preserve_colors=false
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[overlay] LoadOverlay command received: name='sentinel2_1' path='/home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_1_graded.png'
+[overlay] terrain_viewer exists, calling add_overlay_image...
+[overlay] Added layer 'sentinel2_1' (id=1, 8014x2334)
+[overlay] Composite non-zero alpha pixels: 9352338 / 18704676
+[overlay] Built composite texture 4007x4668 from 2 visible layers
+[overlay] Loaded 'sentinel2_1' from /home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_1_graded.png (id=1)
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[overlay] preserve_colors=false
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[overlay] LoadOverlay command received: name='sentinel2_2' path='/home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_2_graded.png'
+[overlay] terrain_viewer exists, calling add_overlay_image...
+[overlay] Added layer 'sentinel2_2' (id=2, 8014x2334)
+[overlay] Composite non-zero alpha pixels: 14028507 / 18704676
+[overlay] Built composite texture 4007x4668 from 3 visible layers
+[overlay] Loaded 'sentinel2_2' from /home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_2_graded.png (id=2)
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[overlay] preserve_colors=false
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[overlay] LoadOverlay command received: name='sentinel2_3' path='/home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_3_graded.png'
+[overlay] terrain_viewer exists, calling add_overlay_image...
+[overlay] Added layer 'sentinel2_3' (id=3, 8014x2334)
+[overlay] Composite non-zero alpha pixels: 18704676 / 18704676
+[overlay] Built composite texture 4007x4668 from 4 visible layers
+[overlay] Loaded 'sentinel2_3' from /home/runner/work/dakar-flyover/dakar-flyover/data/sentinel2_3_graded.png (id=3)
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[overlay] preserve_colors=false
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Sun: az=237.8° el=14.4° int=0.50
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain_scene] CSM renderer created, shadow_map_size=2048, has_moment_maps=false
+[terrain_scene] Shadows initialized (moment_maps=false)
+[terrain_pbr] updated: PBR: ON | shadow=none res=2048 | IBL=1.00 rot=0.0 exp=0.90 | msaa=4 normal=1.00 | height_ao=ON dirs=6 steps=16 | sun_vis=soft samples=4 steps=24 | tonemap=aces
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] PBR pipeline initialized
+[terrain] Height AO compute pipeline initialized (2003x2334)
+[terrain] Sun visibility compute pipeline initialized (2003x2334)
+[terrain_scene] Shadow depth pipeline initialized (4 cascades)
+[csm_uniforms] cascade_count=0, technique=1, shadow_map_size=2048
+[terrain] phi=135.0 theta=45.0 radius=50000 fov=55.0 target=(548050.0, 4457.3, -2624800.0) | sun_az=237.8 sun_el=14.4 intensity=0.50 ambient=0.50 source=manual_angles | zscale=1.00 shadow=0.50 | origin=(-53000.000000,-3325000.000000) span=(1202100.000000,1400400.000000) fallback=false crs=None transform=Some((300.0, 0.0, -53000.0, 0.0, -300.0, 3325000.0))
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=144.3° theta=63.8° r=40000.0 fov=50.0° target=Some([106894.56160632844, 161360.60010558588, -2375830.9422287093])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=144.3° theta=63.8° r=40000.0 fov=50.0° target=Some([106894.56160632844, 161360.60010558588, -2375830.9422287093])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=89.7° theta=68.0° r=40000.0 fov=50.0° target=Some([216982.75709206556, 53340.66517565662, -2449095.525690655])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=74.3° theta=70.4° r=40000.0 fov=46.0° target=Some([172539.5683163916, 34572.84708828656, -2853001.832863338])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=-135.1° theta=77.4° r=40000.0 fov=50.0° target=Some([572786.2001437977, 54052.80104701301, -2957333.2479413045])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=-69.4° theta=77.1° r=40000.0 fov=49.9° target=Some([749578.2329254735, 61435.648797770926, -2556691.4110860657])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=-157.1° theta=61.8° r=40000.0 fov=48.0° target=Some([700628.7235386618, 39188.31242127495, -2281958.3652014006])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=-4.7° theta=74.2° r=40000.0 fov=42.0° target=Some([503321.8023312444, 26139.01156813492, -2221533.7138258195])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[terrain] Camera: phi=37.5° theta=54.4° r=40000.0 fov=46.0° target=Some([293536.49509834143, 36745.04606453658, -2448864.6913015])
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=true, terrain_snap_size=Some((1920, 1080))
+[DEBUG render_to_texture ENTRY] 1920x1080
+[DEBUG render_to_texture] overlay_params: enabled=1, opacity=1, blend=0, solid=1
+Saved snapshot to /home/runner/work/dakar-flyover/dakar-flyover/out/_frame.png
+[DEBUG main_loop] terrain_viewer path, has_terrain=true, snapshot_request=false, terrain_snap_size=None
