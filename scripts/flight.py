@@ -189,9 +189,10 @@ def project(points: np.ndarray, eye: np.ndarray, aim: np.ndarray, fov: float, w:
 
 
 def report(f: Flight) -> None:
-    print(f"{len(f.t)} frames, {f.t[-1]:.0f} s at {FPS} fps")
+    fps = round(1 / (f.t[1] - f.t[0])) if len(f.t) > 1 else FPS
+    print(f"{len(f.t)} frames, {f.t[-1]:.0f} s at {fps} fps")
     for t0, k in zip(f.key_t, KEYS):
-        i = min(int(round(t0 * FPS)), len(f.t) - 1)
+        i = min(int(round(t0 * fps)), len(f.t) - 1)
         c = f"{f.clearance[i]:5.0f} m up" if np.isfinite(f.clearance[i]) else ""
         print(f"  {t0:5.1f} s  {k[4]:<22} {f.speed[i]:5.0f} m/s  lens {f.fov[i]:3.0f}  {c}")
     if np.isfinite(f.clearance).any():
@@ -219,7 +220,8 @@ def draw_map(f: Flight, dem: np.ndarray, path) -> None:
         return ((x - config.LEFT) / (config.DEM_RES * step), (config.TOP - y) / (config.DEM_RES * step))
 
     n = len(f.t)
-    for i in range(0, n, max(1, FPS * 2)):
+    fps = round(1 / (f.t[1] - f.t[0])) if n > 1 else FPS
+    for i in range(0, n, max(1, fps * 2)):
         d.line([px(*f.eye[i, :2]), px(*f.aim[i, :2])], fill=(255, 255, 255), width=1)
     for i in range(n - 1):
         u = i / max(n - 1, 1)
@@ -227,7 +229,7 @@ def draw_map(f: Flight, dem: np.ndarray, path) -> None:
         d.line([px(*f.eye[i, :2]), px(*f.eye[i + 1, :2])], fill=col, width=3)
     for t0, k in zip(f.key_t, KEYS):
         note = k[4]
-        i = min(int(round(t0 * FPS)), n - 1)
+        i = min(int(round(t0 * fps)), n - 1)
         x, y = px(*f.eye[i, :2])
         d.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(255, 255, 0))
         d.text((x + 6, y - 6), f"{t0:g}s {note}", fill=(255, 255, 0))
