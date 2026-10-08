@@ -53,10 +53,15 @@ Then skip the download and take the prepared data from the `prep-data` branch:
 git pull
 git archive -o prep.tar origin/prep-data
 mkdir data -Force; tar -xf prep.tar -C data; Remove-Item prep.tar
-f3d scripts\render.py --stills 2,13,30 --size 960x540 --lite   # quick check
+f3d scripts\render.py --stills "2,13,30" --size 960x540 --lite   # quick check
 f3d scripts\render.py --preview
-f3d scripts\render.py                                          # the full flight
+
+# the full flight, as numbered frames: restarts itself after a stall, skipping finished frames
+do { f3d scripts\render.py --frames-dir out\frames --lite } until ($LASTEXITCODE -eq 0)
+f3d scripts\render.py --encode out\frames                         # -> out\dakar_2027_flyover.mp4
 ```
+
+Quote the `--stills` list: through `f3d`, PowerShell would otherwise split it into separate values. Don't minimize the viewer window while it renders; a minimized window stops drawing and the render stalls.
 
 Never run `pixi install`, `update` or `add` inside `humphreys-orbit`, and don't delete its `.pixi` folder: new copies of the DLLs would be blocked. If it ever stops working, point `$e` at another old environment (solstice, wa-smoke). WSL2 Ubuntu is the fallback; there Vulkan only sees the CPU, but OpenGL reaches the NVIDIA card with `MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA GALLIUM_DRIVER=d3d12`.
 
