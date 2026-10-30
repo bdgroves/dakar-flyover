@@ -12,7 +12,7 @@ on:
     inputs:
       stills:
         description: "Seconds into the flight to render as stills"
-        default: "2,16,28,40,52,68,84,104"
+        default: "2,11,22,34,47,62,76,98"
       fresh:
         description: "Download the data again instead of reusing prep-data"
         type: boolean
@@ -32,7 +32,7 @@ concurrency:
 
 env:
   FORGE3D: "forge3d==1.42.0"
-  STILLS: ${{ inputs.stills || '2,16,28,40,52,68,84,104' }}
+  STILLS: ${{ inputs.stills || '2,11,22,34,47,62,76,98' }}
 
 jobs:
   data:

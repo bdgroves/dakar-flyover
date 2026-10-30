@@ -54,7 +54,7 @@ Then skip the download and take the prepared data from the `prep-data` branch:
 git pull
 git archive -o prep.tar origin/prep-data
 mkdir data -Force; tar -xf prep.tar -C data; Remove-Item prep.tar
-f3d scripts\render.py --stills "2,16,40" --size 960x540 --lite   # quick check
+f3d scripts\render.py --stills "2,11,34" --size 960x540 --lite   # quick check
 f3d scripts\render.py --preview
 
 # the full flight, as numbered frames: restarts itself after a stall, skipping finished frames

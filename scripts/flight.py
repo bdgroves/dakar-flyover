@@ -26,8 +26,9 @@ import route
 # Times come from the speeds: each stretch takes its length / the average of its two speeds.
 # Altitudes are in the stretched terrain's metres (see config.EXAGGERATION).
 KEYS = [
-    # 1. High over the Atlantic, the whole route laid out to the south-east.
-    ((36.00, -11.00, 190000), (32.60, -6.60, 0), 6000, 50, "Over the Atlantic"),
+    # 1. High over the Atlantic, the Algarve coast and the Strait ahead. (Aimed further
+    #    off, toward Morocco, the frame held only sea and dust: the land was too far.)
+    ((36.25, -10.10, 165000), (36.85, -7.30, 0), 6000, 50, "Over the Atlantic"),
     # 2. Down to the start in the Algarve, then east along the coast to the Strait.
     ((36.35, -8.75, 65000), (37.10, -7.70, 0), 24000, 50, "Loulé / Faro, the start"),
     ((36.70, -6.90, 62000), (36.05, -5.40, 0), 32000, 50, "East to the Strait"),
