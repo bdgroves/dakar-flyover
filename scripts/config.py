@@ -15,7 +15,7 @@ CRS = "+proj=tmerc +lat_0=0 +lon_0=-8 +k=1 +x_0=500000 +y_0=0 +datum=WGS84 +unit
 # bivouac in the Sahara and from the Atlantic to Bouarfa, with a margin on every
 # side so the camera never sees the edge of the world.
 WEST, EAST = -15.6, -0.4
-SOUTH, NORTH = 24.4, 38.6
+SOUTH, NORTH = 24.4, 40.0
 DEM_RES = 300.0                # metres; the source is the 90 m Copernicus DEM
 IMAGE_RES = 200.0              # metres; Sentinel-2 is read from its overviews. Keeps each
                                # strip under 8,192 px wide, the usual GPU texture limit
