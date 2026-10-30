@@ -1,11 +1,11 @@
-"""Step 3: fly the Dakar 2027 loop, and write the MP4.
+"""Step 3: fly the Dakar 2027 route, and write the MP4.
 
     pixi run preview        # small and quick: every 3rd frame at 640x360 -> out/preview.mp4
     pixi run stills         # a few full-size frames to check the look -> out/stills/
     pixi run render         # the whole flight at 1920x1080, 30 fps -> out/dakar_2027_flyover.mp4
 
 Terrain: Copernicus 90 m DEM at 300 m, heights stretched (config.EXAGGERATION).
-Imagery: Sentinel-2 at 150 m, with the route outline drawn on the ground. The sun
+Imagery: Sentinel-2 at 200 m, with the route drawn on the ground. The sun
 is placed for a January afternoon in the middle of the rally; each frame gets a
 painted desert sky, a warm grade, dust haze toward the horizon, and the bivouac
 towns named on screen. Frames go straight from the forge3d viewer into ffmpeg.
@@ -60,8 +60,8 @@ TERRAIN = {"zscale": 1.0, "ambient": 0.5}      # the stretch is already in the D
 LABEL_RGB = (253, 250, 244)
 LABEL_HALO = (28, 26, 22)
 LABEL_MAX_KM = 420.0                    # towns further than this aren't named
-TITLE = ("DAKAR 2027", "The loop from the Red Sea \u00b7 1\u201315 January",
-         "Route: the outline announced in May 2026, town to town \u00b7 Heights \u00d7%g")
+TITLE = ("DAKAR 2027", "Portugal to Morocco \u00b7 9\u201323 January",
+         "Route: ASO's stage towns, joined town to town \u00b7 Heights \u00d7%g")
 TITLE_S = 5.0
 
 

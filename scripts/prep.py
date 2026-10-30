@@ -1,11 +1,11 @@
 """Step 2: prepare the terrain and imagery for rendering.
 
-  arabia_dem_300m_x3.tif  the terrain with heights stretched EXAGGERATION times, so
-                          the escarpments and plateaus read from the air
+  dakar_dem_300m_x3.tif   the terrain with heights stretched EXAGGERATION times, so
+                          the Atlas and the escarpments read from the air
   sentinel2_*_graded.png  the imagery toned from surface reflectance (bright sand
-                          kept below white, dark lava fields lifted), the open Red
-                          Sea painted as one smooth gradient (Sentinel-2's sea is a
-                          patchwork of dates), and the route outline and bivouac
+                          kept below white, dark rock lifted), the open Atlantic and
+                          Mediterranean painted as one smooth gradient (Sentinel-2's
+                          sea is a patchwork of dates), and the route and bivouac
                           towns drawn on the ground
 
     pixi run prep
@@ -23,8 +23,7 @@ from scipy import ndimage
 import config
 import route
 
-# Tone: reflectance WHITE maps to white, with a gamma that lifts the dark basalt
-# fields. Desert sand is around 0.3-0.45 reflectance, so this keeps it off white.
+# Tone: reflectance WHITE maps to white, with a gamma that lifts dark rock. Desert sand is around 0.3-0.45 reflectance, so this keeps it off white.
 WHITE = 0.62
 GAMMA = 1.7
 SATURATION = 1.05
@@ -90,7 +89,9 @@ def tone(path) -> np.ndarray:
 
 
 def draw_route(img: Image.Image, left: float, top: float) -> Image.Image:
-    """The route outline and the towns, drawn on the ground."""
+    """The route and the towns, drawn on the ground: stages solid, the transfer dashed,
+    a ring round each town with a loop stage, and hollow dots for the two places
+    that are read off ASO's map (route.APPROX)."""
     res = config.IMAGE_RES
     names = list(route.TOWNS)
     xs, ys = transform("EPSG:4326", config.CRS, [route.TOWNS[n][1] for n in names],
@@ -99,22 +100,38 @@ def draw_route(img: Image.Image, left: float, top: float) -> Image.Image:
     d = ImageDraw.Draw(img)
     lw, hw, r = (max(1, round(m / res)) for m in (LINE_M, HALO_M, DOT_M))
     hw = max(hw, lw + 2)
+    ring = route.LOOP_KM * 1000.0 / res
+
+    def dashed(a, b, width, fill):
+        (x0, y0), (x1, y1) = a, b
+        n = max(2, int(np.hypot(x1 - x0, y1 - y0) / (lw * 8)))
+        for k in range(0, n, 2):
+            u0, u1 = k / n, min((k + 1) / n, 1)
+            d.line([(x0 + (x1 - x0) * u0, y0 + (y1 - y0) * u0), (x0 + (x1 - x0) * u1, y0 + (y1 - y0) * u1)],
+                   fill=fill, width=width)
+
     for a, b, kind in route.LEGS:
-        d.line([px[a], px[b]], fill=route.HALO_RGB, width=hw)
+        (dashed if kind == "transfer" else lambda p, q, width, fill: d.line([p, q], fill=fill, width=width))(
+            px[a], px[b], hw, route.HALO_RGB)
+    for n in route.LOOP_TOWNS:
+        x, y = px[n]
+        d.ellipse([x - ring, y - ring, x + ring, y + ring], outline=route.HALO_RGB, width=hw)
     for a, b, kind in route.LEGS:
-        if kind == "main":
+        if kind == "transfer":
+            dashed(px[a], px[b], lw, route.ROUTE_RGB)
+        else:
             d.line([px[a], px[b]], fill=route.ROUTE_RGB, width=lw)
-        else:                                           # dotted: the loops out of Bisha
-            (x0, y0), (x1, y1) = px[a], px[b]
-            n = max(2, int(np.hypot(x1 - x0, y1 - y0) / (lw * 4)))
-            for k in range(0, n, 2):
-                u0, u1 = k / n, min((k + 1) / n, 1)
-                d.line([(x0 + (x1 - x0) * u0, y0 + (y1 - y0) * u0), (x0 + (x1 - x0) * u1, y0 + (y1 - y0) * u1)],
-                       fill=route.LOOP_RGB, width=lw)
+    for n in route.LOOP_TOWNS:
+        x, y = px[n]
+        o = (hw - lw) / 2
+        d.ellipse([x - ring + o, y - ring + o, x + ring - o, y + ring - o], outline=route.ROUTE_RGB, width=lw)
     for n in names:
         x, y = px[n]
         d.ellipse([x - r - 2, y - r - 2, x + r + 2, y + r + 2], fill=route.HALO_RGB)
-        d.ellipse([x - r, y - r, x + r, y + r], fill=route.LOOP_RGB if n == "Dawasir" else route.ROUTE_RGB)
+        if n in route.APPROX:            # hollow: the place wasn't named
+            d.ellipse([x - r, y - r, x + r, y + r], outline=route.LOOP_RGB, width=max(1, lw))
+        else:
+            d.ellipse([x - r, y - r, x + r, y + r], fill=route.ROUTE_RGB)
     return img
 
 

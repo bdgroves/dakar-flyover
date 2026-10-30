@@ -26,28 +26,28 @@ import route
 # Times come from the speeds: each stretch takes its length / the average of its two speeds.
 # Altitudes are in the stretched terrain's metres (see config.EXAGGERATION).
 KEYS = [
-    # 1. High over the Red Sea, the whole loop laid out to the east.
-    ((21.20, 37.30, 190000), (23.20, 40.60, 0), 6000, 50, "Over the Red Sea"),
-    # 2. Down to the start at King Abdullah Economic City, then north up the coast.
-    ((21.75, 38.75, 70000), (23.30, 38.75, 0), 26000, 50, "King Abdullah Economic City"),
-    ((23.40, 38.55, 60000), (25.20, 38.05, 0), 32000, 50, "Yanbu, up the Red Sea coast"),
-    # 3. Inland to AlUla's sandstone, a little lower and slower.
-    ((25.45, 38.35, 48000), (26.60, 37.95, 0), 20000, 46, "AlUla"),
-    # 4. East along the southern edge of the Nafud to Ha'il.
-    ((26.75, 38.90, 58000), (27.65, 41.40, 0), 32000, 50, "Toward Ha'il and the Nafud"),
-    ((27.35, 41.20, 62000), (25.60, 43.70, 0), 30000, 50, "Ha'il, turning south-east"),
-    # 5. Across the central plateau to Al Duwadimi, and the first marathon south.
-    ((25.40, 43.70, 65000), (24.00, 44.20, 0), 32000, 50, "Al Duwadimi"),
-    ((23.90, 44.20, 72000), (21.10, 43.10, 0), 36000, 50, "Marathon to the refuge bivouac"),
-    # 6. Bisha and the rest day; a look east along the loops to Wadi Ad-Dawasir.
-    ((21.15, 43.15, 58000), (20.15, 42.70, 0), 22000, 48, "Bisha, rest day"),
-    ((20.55, 43.20, 60000), (20.45, 44.75, 0), 12000, 48, "Loops to Wadi Ad-Dawasir"),
-    # 7. West to Al Bahah, over the edge of the Asir escarpment toward the sea.
-    ((20.30, 42.75, 52000), (20.05, 41.40, 0), 16000, 46, "Bisha to Al Bahah"),
-    ((20.10, 41.95, 36000), (20.00, 40.70, 0), 14000, 42, "The Asir escarpment"),
-    # 8. The long transfer north-west, and the finish back on the Red Sea.
-    ((20.70, 40.65, 85000), (22.40, 39.10, 0), 32000, 50, "Transfer to the Red Sea"),
-    ((21.95, 39.75, 60000), (22.40, 39.10, 0), 0, 46, "Finish at KAEC, hold"),
+    # 1. High over the Atlantic, the whole route laid out to the south-east.
+    ((36.00, -11.00, 190000), (32.60, -6.60, 0), 6000, 50, "Over the Atlantic"),
+    # 2. Down to the start in the Algarve, then east along the coast to the Strait.
+    ((36.35, -8.75, 65000), (37.10, -7.70, 0), 24000, 50, "Loulé / Faro, the start"),
+    ((36.70, -6.90, 62000), (36.05, -5.40, 0), 32000, 50, "East to the Strait"),
+    # 3. Across the Mediterranean with the ferry, and the transfer to Bouarfa.
+    ((35.80, -4.80, 80000), (33.60, -2.70, 0), 38000, 50, "Ferry and transfer"),
+    ((33.55, -2.85, 62000), (32.50, -1.95, 0), 24000, 48, "Bouârfa, two loops"),
+    # 4. South-west through the Merzouga dunes to Zagora.
+    ((32.25, -3.10, 55000), (31.10, -4.00, 0), 28000, 48, "The Merzouga dunes"),
+    ((31.10, -4.70, 55000), (30.33, -5.84, 0), 24000, 48, "Zagora"),
+    # 5. West along the Anti-Atlas to Agadir and the rest day.
+    ((30.55, -6.80, 60000), (30.42, -9.40, 0), 32000, 50, "Over the Anti-Atlas"),
+    ((30.15, -8.85, 52000), (30.42, -9.60, 0), 18000, 46, "Agadir, rest day"),
+    # 6. South into the Sahara: Smara, and the marathon out to the refuge.
+    ((29.40, -9.90, 72000), (27.20, -11.30, 0), 36000, 50, "Toward Smara"),
+    ((27.30, -11.00, 62000), (26.20, -13.00, 0), 24000, 48, "Smara and the refuge"),
+    # 7. The longest day, north to Marrakech, over the High Atlas.
+    ((27.70, -11.20, 95000), (30.80, -8.40, 0), 40000, 50, "North to Marrakech"),
+    ((30.35, -8.45, 60000), (31.20, -7.95, 0), 22000, 46, "Over the High Atlas"),
+    # 8. The finish.
+    ((31.10, -8.25, 45000), (31.63, -8.01, 0), 0, 46, "Finish in Marrakech, hold"),
 ]
 HOLD_S = 4.0
 FPS = 30
@@ -154,7 +154,7 @@ def camera(eye: np.ndarray, aim: np.ndarray, min_h: float, fov: float = FOV) -> 
     off = e - a
     r = float(np.linalg.norm(off))
     if r > ORBIT_MAX:
-        # The viewer quietly caps the orbit radius (about 50 km for this terrain), which
+        # The viewer quietly caps the orbit radius (about 5% of the terrain's width), which
         # would pull a high camera down toward its target. The same view, from the same
         # eye, has its target anywhere along the line of sight: put it within the cap.
         a = e - off * (ORBIT_MAX / r)

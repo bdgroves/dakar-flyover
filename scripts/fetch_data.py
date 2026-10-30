@@ -1,10 +1,11 @@
 """Step 1: download the terrain and imagery for the Dakar 2027 flyover into data/.
 
-  arabia_dem_300m.tif   Copernicus GLO-90 elevation (ESA, free), the 1-degree tiles
-                        from the Red Sea to beyond Wadi Ad-Dawasir, on a 300 m grid.
-                        Open sea has no tiles; it is set to sea level.
+  dakar_dem_300m.tif    Copernicus GLO-90 elevation (ESA, free), the 1-degree tiles
+                        from the Algarve to the Western Sahara and from the Atlantic
+                        to Bouarfa, on a 300 m grid. Open sea has no tiles; it is
+                        set to sea level.
   sentinel2_*.tif       Sentinel-2 red, green and blue surface reflectance (x10000)
-                        at 150 m, read from each scene's overviews (so only a few MB
+                        at 200 m, read from each scene's overviews (so only a few MB
                         per scene come down), from the clearest passes of December
                         2025 and January 2026, the season the rally runs in. The
                         bands rather than Sentinel-2's ready-made true colour, which
@@ -36,10 +37,11 @@ import config
 
 COP = "https://copernicus-dem-90m.s3.amazonaws.com"
 STAC = "https://earth-search.aws.element84.com/v1/search"
-# Sentinel-2 scene classes to keep: vegetation, bare, water, unclassified
-# (dropping no-data, saturated, dark/cloud shadow, cloud, cirrus and snow).
+# Sentinel-2 scene classes to keep: vegetation, bare, water, unclassified and
+# snow (dropping no-data, saturated, dark/cloud shadow, cloud and cirrus). Snow
+# stays because the High Atlas carries it in January, when the rally runs.
 # Bright desert is sometimes called cloud; a second, looser pass fills those.
-GOOD_SCL = {2, 4, 5, 6, 7}
+GOOD_SCL = {2, 4, 5, 6, 7, 11}
 GDAL_ENV = dict(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif",
                 GDAL_HTTP_MULTIRANGE="YES", GDAL_HTTP_MERGE_CONSECUTIVE_RANGES="YES", VSI_CACHE="TRUE",
                 GDAL_HTTP_MAX_RETRY="4", GDAL_HTTP_RETRY_DELAY="2")
